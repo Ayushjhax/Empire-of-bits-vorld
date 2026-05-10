@@ -151,6 +151,14 @@ export default function Games() {
     viewerCount?: number;
     totalCoinsSpent?: number;
   } | null>(null);
+  const [showStreamerRoleModal, setShowStreamerRoleModal] = useState(false);
+
+  const VORLD_TV_URL = "https://vorld.tv/";
+  const isActiveStreamerRoleError = (msg: string | undefined) =>
+    Boolean(
+      msg &&
+        /active streamer role required/i.test(msg.trim()),
+    );
 
   // At start, pending. On arena_begins: live. On game_completed/game_stopped: completed/stopped.
 
@@ -713,9 +721,13 @@ export default function Games() {
           description: `Game ID: ${result.data.gameId}`,
         });
       } else {
+        const errText = result.error || "";
+        if (isActiveStreamerRoleError(errText)) {
+          setShowStreamerRoleModal(true);
+        }
         toast({
           title: "Arena Init Failed",
-          description: result.error || "Unknown error",
+          description: errText || "Unknown error",
         });
       }
     } catch (e: any) {
@@ -1179,7 +1191,7 @@ export default function Games() {
           }}
         ></div>
         <div className="flex items-center mb-4">
-          <Link href="/levels">
+          <Link href="/games">
             <Button
               variant="ghost"
               size="icon"
@@ -1426,6 +1438,60 @@ export default function Games() {
           onRetry={handleRetryLevel}
         />
       )}
+      {/* Streamer role required (403 from sessions API) */}
+      {showStreamerRoleModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[210] p-4">
+          <div
+            className="bg-gray-900 border-4 border-amber-500 p-6 max-w-md w-full relative mx-auto my-auto"
+            style={{
+              background: "linear-gradient(to bottom, #1a1a1a, #000000)",
+              boxShadow:
+                "0 0 20px rgba(251, 191, 36, 0.35), 0 0 40px rgba(255, 0, 255, 0.08)",
+            }}
+          >
+            <button
+              type="button"
+              className="absolute top-2 right-2 text-gray-400 hover:text-white"
+              onClick={() => setShowStreamerRoleModal(false)}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <div className="text-center mb-4">
+              <div className="text-xl font-bold text-amber-300">
+                Streamer mode required
+              </div>
+              <p className="text-sm text-gray-300 mt-3 leading-relaxed">
+                Arena needs an active streamer account. Open{" "}
+                <span className="text-yellow-200 font-semibold">vorld.tv</span>,
+                go to your profile, and enable{" "}
+                <span className="text-yellow-200 font-semibold">
+                  Streamer mode
+                </span>
+                . You can keep playing the game here either way.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button
+                className="bg-amber-600 hover:bg-amber-700 text-black font-bold"
+                asChild
+              >
+                <a href={VORLD_TV_URL} target="_blank" rel="noopener noreferrer">
+                  Open vorld.tv
+                </a>
+              </Button>
+              <Button
+                variant="outline"
+                className="border-gray-500 text-gray-200 hover:bg-gray-800"
+                onClick={() => setShowStreamerRoleModal(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stream URL Modal */}
       {showStreamDialog && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[200] p-4">

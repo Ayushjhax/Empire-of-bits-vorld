@@ -334,9 +334,12 @@ export class ArenaGameService {
         data: this.gameState ?? undefined,
       };
     } catch (error: any) {
+      const apiMsg =
+        error.response?.data?.error?.message ??
+        error.response?.data?.message;
       return {
         success: false,
-        error: error.response?.data?.message || "Failed to initialize game",
+        error: apiMsg || "Failed to initialize game",
       };
     }
   }
