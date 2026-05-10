@@ -146,6 +146,11 @@ export default function Games() {
   const [lastGameEvent, setLastGameEvent] = useState<any>(null);
   const [lastCountdown, setLastCountdown] = useState<number | null>(null);
   const [lastBoostCycleUpdate, setLastBoostCycleUpdate] = useState<any>(null);
+  const [sessionDetails, setSessionDetails] = useState<{
+    streamerUsername?: string | null;
+    viewerCount?: number;
+    totalCoinsSpent?: number;
+  } | null>(null);
 
   // At start, pending. On arena_begins: live. On game_completed/game_stopped: completed/stopped.
 
@@ -662,6 +667,18 @@ export default function Games() {
           : "bg-gray-800 border-gray-500 text-gray-300";
   }
 
+  const mapSessionStatusToLabel = (
+    status?: string,
+  ): "pending" | "live" | "completed" | "stopped" => {
+    if (!status) return "pending";
+    if (status === "active" || status === "live") return "live";
+    if (status === "completed") return "completed";
+    if (status === "cancelled" || status === "aborted" || status === "stopped") {
+      return "stopped";
+    }
+    return "pending";
+  };
+
   const handleStartArena = async () => {
     const arena = arenaServiceRef.current;
     if (!arena) return;
@@ -682,6 +699,13 @@ export default function Games() {
       setArenaLoader(false);
       if (result.success && result.data) {
         setArenaGameState(result.data);
+        setStatusLabel(mapSessionStatusToLabel(result.data.status));
+        setMonitorArenaActive(Boolean(result.data.arenaActive));
+        setSessionDetails({
+          streamerUsername: result.data.streamerUsername,
+          viewerCount: result.data.viewerCount,
+          totalCoinsSpent: result.data.totalCoinsSpent,
+        });
         setShowArenaPanel(true);
         setCurrentStreamUrl(streamUrl);
         toast({
@@ -721,6 +745,7 @@ export default function Games() {
       setMonitorPackageDrops([]);
       setMonitorGameEvents([]);
       setStatusLabel("pending");
+      setSessionDetails(null);
       setCurrentCycle(null);
       setLastBoost(null);
       setLastJoin(null);
@@ -741,6 +766,29 @@ export default function Games() {
       });
     }
   };
+
+  useEffect(() => {
+    const arena = arenaServiceRef.current;
+    if (!arena || !arenaGameState?.gameId) return;
+
+    const syncSession = async () => {
+      const details = await arena.getGameDetails(arenaGameState.gameId);
+      if (details.success && details.data) {
+        setArenaGameState(details.data);
+        setStatusLabel(mapSessionStatusToLabel(details.data.status));
+        setMonitorArenaActive(Boolean(details.data.arenaActive));
+        setSessionDetails({
+          streamerUsername: details.data.streamerUsername,
+          viewerCount: details.data.viewerCount,
+          totalCoinsSpent: details.data.totalCoinsSpent,
+        });
+      }
+    };
+
+    syncSession();
+    const interval = setInterval(syncSession, 5000);
+    return () => clearInterval(interval);
+  }, [arenaGameState?.gameId]);
 
   const handleOpenUpdateStream = () => {
     if (!arenaGameState) return;
@@ -912,6 +960,29 @@ export default function Games() {
         <div className="rounded-lg px-4 py-4 border-2 border-blue-400 text-blue-200 font-bold flex items-center gap-3 shadow-md bg-blue-900/60">
           <Timer />
           COUNTDOWN:&nbsp;{lastCountdown !== null ? `${lastCountdown}s` : "--"}
+        </div>
+        <div className="rounded-lg px-4 py-4 border-2 border-cyan-400 text-cyan-200 font-bold flex flex-col gap-1 shadow-md bg-cyan-900/30">
+          <span className="flex items-center gap-2">
+            <Users /> LIVE SESSION DETAILS
+          </span>
+          <div className="text-sm text-white">
+            Streamer:{" "}
+            <span className="text-yellow-200">
+              {sessionDetails?.streamerUsername || "--"}
+            </span>
+          </div>
+          <div className="text-sm text-white">
+            Viewers:{" "}
+            <span className="text-green-300">
+              {sessionDetails?.viewerCount ?? 0}
+            </span>
+          </div>
+          <div className="text-sm text-white">
+            Coins Spent:{" "}
+            <span className="text-pink-300">
+              {sessionDetails?.totalCoinsSpent ?? 0}
+            </span>
+          </div>
         </div>
         {/* Cycle Box w/ reset */}
         <div className="rounded-lg px-4 py-4 border-2 border-yellow-400 text-yellow-300 font-bold flex flex-col gap-1 shadow-md bg-yellow-900/40">
