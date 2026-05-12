@@ -128,15 +128,15 @@ export default function GamesPage() {
 
     {
       id: 5,
-      title: "Platformer",
-      category: "Action",
-      image: "/images/platformer.jpg",
+      title: "Poker",
+      category: "Strategy",
+      image: "/images/poker.jpg",
       pointsRequired: 15,
       maxPlayers: 6,
       prize: 0.18,
       players: 4,
-      status: "coming-soon",
-      route: "/coming-soon-games",
+      status: "live",
+      route: "https://poker-v.vercel.app/",
     },
     {
       id: 77,
